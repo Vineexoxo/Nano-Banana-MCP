@@ -65,7 +65,7 @@ class NanoBananaMCPServer:
             
             try:
                 self.client = Client(api_key=self.api_key)
-                print(f"✅ Nano Banana MCP Server: Created AI Studio client")
+                print("Nano Banana MCP Server: Created AI Studio client")
             finally:
                 # Restore original environment variables
                 for var, value in original_env.items():
@@ -129,7 +129,7 @@ class NanoBananaMCPServer:
                 )
                 
         except Exception as e:
-            print(f"❌ Nano Banana MCP: Error generating image: {str(e)}")
+            print(f"Nano Banana MCP: Error generating image: {str(e)}")
             return ImageGenerationResponse(
                 success=False,
                 error_message=f"Image generation failed: {str(e)}"
