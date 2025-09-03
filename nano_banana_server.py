@@ -49,27 +49,8 @@ class NanoBananaMCPServer:
     async def _get_client(self) -> Client:
         """Get or create the AI Studio client."""
         if self.client is None:
-            # Clear any Google Cloud environment variables that might interfere
-            original_env = {}
-            google_env_vars = [
-                'GOOGLE_CLOUD_PROJECT',
-                'GOOGLE_CLOUD_LOCATION', 
-                'GOOGLE_APPLICATION_CREDENTIALS',
-                'GOOGLE_GENAI_USE_VERTEXAI',
-            ]
-            
-            for var in google_env_vars:
-                if var in os.environ:
-                    original_env[var] = os.environ[var]
-                    del os.environ[var]
-            
-            try:
-                self.client = Client(api_key=self.api_key)
-                print("Nano Banana MCP Server: Created AI Studio client")
-            finally:
-                # Restore original environment variables
-                for var, value in original_env.items():
-                    os.environ[var] = value
+            self.client = Client(api_key=self.api_key)
+            print("✅ Nano Banana MCP Server: Created AI Studio client")
         
         return self.client
     
