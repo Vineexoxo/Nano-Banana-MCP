@@ -162,6 +162,47 @@ class NanoBananaMCPServer:
             result["error"] = response.error_message
         
         return result
+    
+    async def generate_image_from_raw_bytes(self, prompt: str, input_image_bytes: Optional[bytes] = None, 
+                                          input_image_mime_type: Optional[str] = None) -> Dict[str, Any]:
+        """Generate image with raw bytes input (like the example code).
+        
+        Args:
+            prompt: Text prompt describing what image to generate
+            input_image_bytes: Optional raw bytes of input image for variations
+            input_image_mime_type: MIME type of input image (e.g., 'image/png', 'image/jpeg')
+            
+        Returns:
+            Dictionary with:
+            - success: bool indicating if generation was successful
+            - generated_image_bytes: raw bytes of generated image (if successful)
+            - generated_image_size: size of generated image in bytes
+            - model_used: name of the model used
+            - error: error message (if failed)
+        """
+        # Create request with raw bytes
+        request = ImageGenerationRequest(
+            prompt=prompt,
+            input_image_data=input_image_bytes,
+            input_image_mime_type=input_image_mime_type
+        )
+        
+        # Generate image
+        response = await self.generate_image(request)
+        
+        # Prepare result
+        result = {
+            "success": response.success,
+            "model_used": response.model_used
+        }
+        
+        if response.success and response.generated_image_data:
+            result["generated_image_bytes"] = response.generated_image_data
+            result["generated_image_size"] = len(response.generated_image_data)
+        else:
+            result["error"] = response.error_message
+        
+        return result
 
 # MCP Tool Functions
 async def generate_image_with_nano_banana(
