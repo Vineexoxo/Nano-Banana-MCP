@@ -1,0 +1,12 @@
+{
+    "mcpServers": {
+      "nano-banana": {
+        "command": "python3",
+        "args": ["mcp_servers/nano_banana_server.py"],
+        "env": {
+          "GOOGLE_AI_STUDIO_API_KEY": "${GOOGLE_AI_STUDIO_API_KEY}"
+        }
+      }
+    }
+  }
+  
