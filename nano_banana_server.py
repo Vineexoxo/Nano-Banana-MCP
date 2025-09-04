@@ -5,9 +5,16 @@ import os
 import sys
 from typing import Any, Dict, List, Optional
 from dataclasses import dataclass
+from dotenv import load_dotenv
+import logging
+
+logger = logging.getLogger(__name__)
+
+load_dotenv()
 
 # Add the project root to the path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 
 try:
     from google.genai import Client, types
@@ -50,7 +57,7 @@ class NanoBananaMCPServer:
         """Get or create the AI Studio client."""
         if self.client is None:
             self.client = Client(api_key=self.api_key)
-            print("✅ Nano Banana MCP Server: Created AI Studio client")
+            logger.info("Nano Banana MCP Server: Created AI Studio client")
         
         return self.client
     
@@ -64,7 +71,7 @@ class NanoBananaMCPServer:
             ImageGenerationResponse with generated image data or error
         """
         try:
-            print(f"🎨 Nano Banana MCP: Generating image with prompt: {request.prompt[:100]}...")
+            logger.info(f"Nano Banana MCP: Generating image with prompt: {request.prompt[:100]}...")
             
             client = await self._get_client()
             
@@ -73,7 +80,7 @@ class NanoBananaMCPServer:
             
             # Add input image if provided
             if request.input_image_data:
-                print(f"📷 Nano Banana MCP: Using input image ({len(request.input_image_data)} bytes)")
+                logger.info(f"Nano Banana MCP: Using input image ({len(request.input_image_data)} bytes)")
                 image_part = types.Part.from_bytes(
                     data=request.input_image_data,
                     mime_type=request.input_image_mime_type or "image/png"
@@ -86,7 +93,7 @@ class NanoBananaMCPServer:
                 contents=contents,
             )
             
-            print(f"✅ Nano Banana MCP: Received response with {len(response.candidates)} candidates")
+            logger.info(f"Nano Banana MCP: Received response with {len(response.candidates)} candidates")
             
             # Extract generated image
             generated_image_data = None
@@ -94,7 +101,7 @@ class NanoBananaMCPServer:
                 if hasattr(part, 'inline_data') and part.inline_data is not None:
                     if hasattr(part.inline_data, 'data') and part.inline_data.data:
                         generated_image_data = part.inline_data.data
-                        print(f"✅ Nano Banana MCP: Extracted generated image ({len(generated_image_data)} bytes)")
+                        logger.info(f"Nano Banana MCP: Extracted generated image ({len(generated_image_data)} bytes)")
                         break
             
             if generated_image_data:
@@ -110,7 +117,7 @@ class NanoBananaMCPServer:
                 )
                 
         except Exception as e:
-            print(f"Nano Banana MCP: Error generating image: {str(e)}")
+            logger.error(f"Nano Banana MCP: Error generating image: {str(e)}")
             return ImageGenerationResponse(
                 success=False,
                 error_message=f"Image generation failed: {str(e)}"
@@ -208,6 +215,7 @@ class NanoBananaMCPServer:
 async def generate_image_with_nano_banana(
     prompt: str,
     input_image_b64: Optional[str] = None,
+    input_image_bytes: Optional[bytes] = None,
     input_image_mime_type: Optional[str] = None
 ) -> Dict[str, Any]:
     """MCP tool function for generating images with Nano Banana.
@@ -215,6 +223,7 @@ async def generate_image_with_nano_banana(
     Args:
         prompt: Text prompt describing what image to generate
         input_image_b64: Optional base64 encoded input image for variations
+        input_image_bytes: Optional raw bytes of input image for variations
         input_image_mime_type: MIME type of input image (e.g., 'image/png', 'image/jpeg')
         
     Returns:
@@ -226,26 +235,16 @@ async def generate_image_with_nano_banana(
         - error: error message (if failed)
     """
     server = NanoBananaMCPServer()
-    return await server.generate_image_from_base64(prompt, input_image_b64, input_image_mime_type)
-
-# Test function
-async def test_nano_banana_server():
-    """Test the Nano Banana MCP server."""
-    print("🧪 Testing Nano Banana MCP Server...")
-    
-    # Test without input image (text-to-image)
-    result = await generate_image_with_nano_banana(
-        prompt="A beautiful handcrafted ceramic bowl with intricate patterns"
-    )
-    
-    print(f"Text-to-image result: {result['success']}")
-    if result['success']:
-        print(f"Generated image size: {result['generated_image_size']} bytes")
+    # Route based on provided input: prefer raw bytes over base64 when both are present
+    if input_image_bytes is not None:
+        return await server.generate_image_from_raw_bytes(
+            prompt=prompt,
+            input_image_bytes=input_image_bytes,
+            input_image_mime_type=input_image_mime_type,
+        )
     else:
-        print(f"Error: {result['error']}")
-    
-    return result
-
-if __name__ == "__main__":
-    # Run test if executed directly
-    asyncio.run(test_nano_banana_server())
+        return await server.generate_image_from_base64(
+            prompt=prompt,
+            input_image_b64=input_image_b64,
+            input_image_mime_type=input_image_mime_type,
+        )
